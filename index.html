@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Buraco Negro das Preocupações</title>
 <style>
 * {
@@ -16,6 +16,9 @@ body {
     background: #030205;
     font-family: Arial, Helvetica, sans-serif;
     color: white;
+    position: fixed;
+    width: 100%;
+    height: 100%;
 }
 
 /* TELA DE INTRODUÇÃO (Para permitir o som) */
@@ -62,8 +65,11 @@ body {
 }
 
 canvas {
-    position: fixed;
-    inset: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1;
 }
 
@@ -135,7 +141,7 @@ button.action-btn:hover {
 .letter {
     position: fixed;
     color: #ffffff;
-    font-size: 18px; /* Reduzido levemente para o mobile não quebrar tanto */
+    font-size: 18px;
     font-weight: bold;
     pointer-events: none;
     z-index: 10;
@@ -150,7 +156,7 @@ button.action-btn:hover {
     top: 30px;
     width: 100%;
     text-align: center;
-    font-size: 26px; /* Reduzido de 32px para evitar quebras */
+    font-size: 26px;
     letter-spacing: 4px;
     z-index: 100;
     color: #ffca94;
@@ -160,7 +166,7 @@ button.action-btn:hover {
 
 .subtitle {
     position: fixed;
-    top: 70px; /* Ajustado para não colidir */
+    top: 70px;
     width: 100%;
     text-align: center;
     opacity: .7;
@@ -170,7 +176,6 @@ button.action-btn:hover {
     padding: 0 20px;
 }
 
-/* CAIXA DE MENSAGEM RESTRITA AO INTERIOR DO BURACO NEGRO */
 #response-message {
     position: fixed;
     top: 50%; 
@@ -178,8 +183,8 @@ button.action-btn:hover {
     transform: translate(-50%, -50%); 
     z-index: 95;
     text-align: center;
-    width: 130px; /* Reduzido para encaixar na proporção mobile */
-    max-height: 130px;
+    width: 120px;
+    max-height: 120px;
     font-size: 13px; 
     line-height: 1.4;
     letter-spacing: 1px;
@@ -250,8 +255,16 @@ const universeResponses = [
     "It has ceased to exist."
 ];
 
+// CORREÇÃO CRÍTICA: Variável declarada ANTES da classe para evitar erros no Mobile!
+const colors = [
+    'rgba(255, 240, 210, ', 
+    'rgba(255, 160, 60, ',  
+    'rgba(230, 90, 30, ',   
+    'rgba(150, 40, 10, '    
+];
+
 let w, h, cx, cy;
-let BH_RADIUS = 95; // Será dinâmico com base no tamanho da tela
+let BH_RADIUS = 95;
 
 function resize() {
     w = canvas.width = window.innerWidth;
@@ -259,10 +272,9 @@ function resize() {
     cx = w / 2;
     cy = h / 2;
     
-    // DINÂMICO: Se a tela for pequena (mobile), diminui o tamanho do buraco negro
     if (w < 600) {
-        BH_RADIUS = 75; 
-        responseDiv.style.width = "110px"; // Ajusta a caixa de texto interna
+        BH_RADIUS = 70; 
+        responseDiv.style.width = "105px";
     } else {
         BH_RADIUS = 95;
         responseDiv.style.width = "130px";
@@ -282,9 +294,9 @@ class Particle {
 
     reset() {
         this.angle = Math.random() * Math.PI * 2;
-        this.radius = 350 + Math.random() * 250; // Ajustado alcance inicial para mobile
+        this.radius = 300 + Math.random() * 250; 
         this.speed = 0.004 + Math.random() * 0.008;
-        this.size = Math.random() * 1.6 + 0.5;
+        this.size = Math.random() * 1.5 + 0.5;
         this.colorIdx = Math.floor(Math.random() * colors.length);
         this.alpha = Math.random() * 0.6 + 0.2;
         this.type = 'disk'; 
@@ -317,14 +329,8 @@ class Particle {
     }
 }
 
-const colors = [
-    'rgba(255, 240, 210, ', 
-    'rgba(255, 160, 60, ',  
-    'rgba(230, 90, 30, ',   
-    'rgba(150, 40, 10, '    
-];
-
-for (let i = 0; i < 1400; i++) { // Reduzido sutilmente de 1600 para melhor desempenho mobile
+// Reduzido para 1000 para dar fluidez máxima em qualquer processador de smartphone
+for (let i = 0; i < 1000; i++) { 
     particles.push(new Particle());
 }
 
@@ -430,7 +436,7 @@ function drawStructure() {
 }
 
 function drawStars() {
-    for (let i = 0; i < 45; i++) { // Otimizado para telas mobile
+    for (let i = 0; i < 35; i++) { 
         const x = (i * 1331) % w;
         const y = (i * 727) % h;
         if (Math.hypot(x - cx, y - cy) < BH_RADIUS + 80) continue;
