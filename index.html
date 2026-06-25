@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buraco Negro das Preocupações</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    background: #030205;
+    font-family: Arial, Helvetica, sans-serif;
+    color: white;
+}
+
+/* TELA DE INTRODUÇÃO (Para permitir o som) */
+#intro-screen {
+    position: fixed;
+    inset: 0;
+    background: #030205;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 1s ease-out, pointer-events 1s;
+}
+
+#intro-screen h1 {
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: #ffca94;
+    text-shadow: 0 0 15px rgba(255,120,30,0.4);
+    font-weight: 300;
+}
+
+#start-btn {
+    border: 1px solid rgba(255, 150, 50, 0.4);
+    padding: 14px 40px;
+    border-radius: 30px;
+    cursor: pointer;
+    background: transparent;
+    color: white;
+    font-size: 16px;
+    letter-spacing: 2px;
+    transition: all 0.3s ease;
+}
+
+#start-btn:hover {
+    background: #ff9d42;
+    color: #030205;
+    box-shadow: 0 0 25px rgba(240, 120, 40, 0.6);
+    border-color: transparent;
+}
+
+canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+}
+
+#flash-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 90;
+    background: radial-gradient(circle, rgba(255,160,60,0.5) 0%, rgba(227,111,30,0.1) 60%, rgba(0,0,0,0) 100%);
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity 0.05s ease-out;
+}
+
+.ui {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    width: 95%;
+    max-width: 500px;
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+    padding: 14px;
+    border: 1px solid rgba(255, 150, 50, 0.25);
+    border-radius: 12px;
+    background: rgba(12, 8, 18, 0.75);
+    color: white;
+    outline: none;
+    font-size: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 20px rgba(230, 110, 30, 0.15);
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+}
+
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+button.action-btn {
+    border: none;
+    padding: 12px 35px;
+    border-radius: 10px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ff9d42, #e36f1e);
+    color: white;
+    font-weight: bold;
+    font-size: 15px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(227, 111, 30, 0.3);
+}
+
+button.action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(240, 120, 40, 0.6);
+}
+
+.letter {
+    position: fixed;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 10;
+    white-space: pre;
+    text-shadow:
+        0 0 6px #ff9933,
+        0 0 15px #e36f1e;
+}
+
+.title {
+    position: fixed;
+    top: 40px;
+    width: 100%;
+    text-align: center;
+    font-size: 32px;
+    letter-spacing: 4px;
+    z-index: 100;
+    color: #ffca94;
+    text-shadow: 0 0 15px rgba(255,120,30,0.4);
+}
+
+.subtitle {
+    position: fixed;
+    top: 85px;
+    width: 100%;
+    text-align: center;
+    opacity: .7;
+    z-index: 100;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* AJUSTADO: CAIXA DE MENSAGEM RESTRITA AO INTERIOR DO BURACO NEGRO */
+#response-message {
+    position: fixed;
+    top: 50%; /* Centro vertical absoluto */
+    left: 50%; /* Centro horizontal absoluto */
+    transform: translate(-50%, -50%); /* Garante centralização simétrica */
+    z-index: 95;
+    text-align: center;
+    
+    /* Configurações de tamanho interno para não vazar o círculo de 95px de raio (190px de diâmetro) */
+    width: 160px; 
+    max-height: 160px;
+    
+    /* Tipografia reduzida para encaixar perfeitamente */
+    font-size: 14px; 
+    line-height: 1.4;
+    letter-spacing: 1px;
+    color: #ffcaa4;
+    font-weight: bold;
+    
+    /* Efeitos visuais */
+    opacity: 0;
+    pointer-events: none;
+    text-shadow: 0 0 8px rgba(255, 160, 60, 0.6);
+    transition: opacity 1s ease-in-out;
+    
+    /* Centraliza textos longos verticalmente caso quebrem linhas */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+</head>
+<body>
+
+<div id="intro-screen">
+    <h1>A SPACE TO LET GO</h1>
+    <button id="start-btn" onclick="initExperience()">ENTER THE SILENCE</button>
+</div>
+
+<div id="response-message"></div>
+
+<div id="flash-overlay"></div>
+<canvas id="space"></canvas>
+
+<div class="title">THE COMFORTING VOID</div>
+<div class="subtitle">Leave behind the weight you no longer need to carry</div>
+
+<div class="ui">
+    <textarea id="wish" maxlength="400" placeholder="Write what is clouding your mind... Let the universe absorb it."></textarea>
+    <button class="action-btn" onclick="throwText()">Let Go</button>
+</div>
+
+<script>
+const canvas = document.getElementById("space");
+const ctx = canvas.getContext("2d");
+const flashOverlay = document.getElementById("flash-overlay");
+const responseDiv = document.getElementById("response-message");
+
+const universeResponses = [
+    "It is gone. Breathe in.",
+    "The void has taken it.",
+    "It no longer belongs to you.",
+    "You are free from that weight.",
+    "Dissolved into nothing.",
+    "Left behind in the dark.",
+    "It has ceased to exist."
+];
+
+let w, h, cx, cy;
+function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cx = w / 2;
+    cy = h / 2;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const particles = [];
+let letters = []; 
+const BH_RADIUS = 95;
+
+let flashActive = false;
+
+const colors = [
+    'rgba(255, 240, 210, ', 
+    'rgba(255, 160, 60, ',  
+    'rgba(230, 90, 30, ',   
+    'rgba(150, 40, 10, '    
+];
+
+class Particle {
+    constructor() {
+        this.reset();
+        this.radius = BH_RADIUS + Math.random() * 500;
+    }
+
+    reset() {
+        this.angle = Math.random() * Math.PI * 2;
+        this.radius = 450 + Math.random() * 200;
+        this.speed = 0.004 + Math.random() * 0.008;
+        this.size = Math.random() * 1.8 + 0.5;
+        this.colorIdx = Math.floor(Math.random() * colors.length);
+        this.alpha = Math.random() * 0.6 + 0.2;
+        this.type = 'disk'; 
+    }
+
+    update() {
+        const currentSpeed = flashActive ? this.speed * 2.5 : this.speed;
+        this.angle += currentSpeed;
+        this.radius -= flashActive ? 0.8 : 0.25; 
+
+        if (this.radius < BH_RADIUS - 2) {
+            this.reset();
+        }
+    }
+
+    draw() {
+        const cos = Math.cos(this.angle);
+        const sin = Math.sin(this.angle);
+
+        const x = cx + cos * this.radius;
+        const y = cy + sin * this.radius * 0.22 - (x - cx) * 0.12; 
+
+        ctx.beginPath();
+        let calculatedAlpha = this.alpha;
+        if (flashActive) calculatedAlpha = Math.min(this.alpha + 0.3, 1);
+
+        ctx.fillStyle = colors[this.colorIdx] + calculatedAlpha + ')';
+        ctx.arc(x, y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+
+for (let i = 0; i < 1600; i++) {
+    particles.push(new Particle());
+}
+
+let textGroupCounter = 0;
+
+function throwText() {
+    const input = document.getElementById("wish");
+    const text = input.value;
+    if (!text.trim()) return;
+
+    textGroupCounter++;
+    const baseAngle = Math.random() * Math.PI * 2;
+    const initialRadius = Math.max(w, h) * 0.45;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        
+        const el = document.createElement("div");
+        el.className = "letter";
+        el.innerText = char;
+        document.body.appendChild(el);
+
+        letters.push({
+            el,
+            groupId: textGroupCounter,
+            isLastOfGroup: (i === text.length - 1), 
+            angle: baseAngle - (i * 0.06), 
+            radius: initialRadius + (i * 8), 
+            speed: 0.02 + Math.random() * 0.005
+        });
+    }
+
+    input.value = "";
+}
+
+function triggerReceptionFlash() {
+    flashActive = true;
+    flashOverlay.style.transition = "opacity 0.02s ease-out";
+    flashOverlay.style.opacity = "1";
+
+    setTimeout(() => {
+        flashOverlay.style.transition = "opacity 0.8s ease-in-out";
+        flashOverlay.style.opacity = "0";
+        setTimeout(() => { flashActive = false; }, 800);
+    }, 50);
+}
+
+function updateLetters() {
+    letters = letters.filter(letter => {
+        letter.angle += letter.speed;
+        letter.radius *= 0.984; 
+
+        const x = cx + Math.cos(letter.angle) * letter.radius;
+        const y = cy + Math.sin(letter.angle) * letter.radius * 0.22 - (x - cx) * 0.12;
+
+        const scale = Math.max(letter.radius / 550, 0);
+
+        letter.el.style.left = x + "px";
+        letter.el.style.top = y + "px";
+        letter.el.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${letter.angle * 30}deg)`;
+        letter.el.style.opacity = Math.min(scale * 2, 1);
+
+        if (letter.radius < BH_RADIUS - 8) {
+            letter.el.remove();
+            
+            if (letter.isLastOfGroup) {
+                triggerReceptionFlash();
+                blackHoleImpact(); 
+            }
+            return false;
+        }
+        return true;
+    });
+}
+
+function drawStructure() {
+    let dynamicGlowRadius = flashActive ? 400 : 320;
+    let dynamicAlpha = flashActive ? 0.45 : 0.25;
+
+    const bgGlow = ctx.createRadialGradient(cx, cy, BH_RADIUS, cx, cy, dynamicGlowRadius);
+    bgGlow.addColorStop(0, `rgba(255, 130, 40, ${dynamicAlpha})`);
+    bgGlow.addColorStop(0.5, `rgba(160, 50, 10, ${dynamicAlpha * 0.24})`);
+    bgGlow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = bgGlow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, dynamicGlowRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowBlur = flashActive ? 25 : 12;
+    ctx.shadowColor = "#ffaa44";
+    ctx.strokeStyle = flashActive ? "rgba(255, 255, 220, 0.95)" : "rgba(255, 230, 170, 0.75)";
+    ctx.lineWidth = flashActive ? 4 : 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, BH_RADIUS + 1, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "#030205"; 
+    ctx.beginPath();
+    ctx.arc(cx, cy, BH_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawStars() {
+    for (let i = 0; i < 55; i++) {
+        const x = (i * 1331) % w;
+        const y = (i * 727) % h;
+        if (Math.hypot(x - cx, y - cy) < BH_RADIUS + 80) continue;
+        
+        ctx.fillStyle = "rgba(255, 240, 220, 0.425)";
+        ctx.fillRect(x, y, 1, 1);
+    }
+}
+
+function animate() {
+    ctx.fillStyle = "rgba(3, 2, 5, 0.35)"; 
+    ctx.fillRect(0, 0, w, h);
+
+    drawStars();
+
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
+
+    drawStructure();
+    updateLetters();
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+document.getElementById("wish").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        throwText();
+    }
+});
+
+
+// =======================================================
+// ===== ENGINE DE ÁUDIO CINEMATOGRÁFICO PROCEDURAL ======
+// =======================================================
+
+let audioStarted = false;
+let audioContext;
+let melodyInterval;
+let reverbNode;
+let mainFilter;
+
+function createReverb(seconds = 10) {
+    const rate = audioContext.sampleRate;
+    const length = rate * seconds;
+    const impulse = audioContext.createBuffer(2, length, rate);
+
+    for (let c = 0; c < 2; c++) {
+        const channel = impulse.getChannelData(c);
+        for (let i = 0; i < length; i++) {
+            channel[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3);
+        }
+    }
+
+    const convolver = audioContext.createConvolver();
+    convolver.buffer = impulse;
+    return convolver;
+}
+
+function initExperience() {
+    const intro = document.getElementById('intro-screen');
+    intro.style.opacity = '0';
+    intro.style.pointerEvents = 'none';
+    
+    startBlackHoleSound();
+    
+    setTimeout(() => {
+        intro.remove();
+    }, 1000);
+}
+
+function startBlackHoleSound() {
+    if (audioStarted) return;
+    audioStarted = true;
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    reverbNode = createReverb(10);
+    mainFilter = audioContext.createBiquadFilter();
+    mainFilter.type = "lowpass";
+    mainFilter.frequency.value = 900;
+
+    reverbNode.connect(audioContext.destination);
+    mainFilter.connect(reverbNode);
+    mainFilter.connect(audioContext.destination);
+
+    const pad1 = audioContext.createOscillator();
+    const pad2 = audioContext.createOscillator();
+    const pad3 = audioContext.createOscillator();
+    const padGain = audioContext.createGain();
+    
+    pad1.type = "triangle";
+    pad2.type = "sine";
+    pad3.type = "triangle";
+    
+    pad1.frequency.value = 110.00;
+    pad2.frequency.value = 164.81;
+    pad3.frequency.value = 220.00;
+    
+    padGain.gain.value = 0.06;
+    
+    pad1.connect(padGain);
+    pad2.connect(padGain);
+    pad3.connect(padGain);
+    padGain.connect(mainFilter);
+    
+    pad1.start();
+    pad2.start();
+    pad3.start();
+
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    lfo.frequency.value = 0.035;
+    lfoGain.gain.value = 4;
+    
+    lfo.connect(lfoGain);
+    lfoGain.connect(pad1.frequency);
+    lfoGain.connect(pad2.frequency);
+    lfoGain.connect(pad3.frequency);
+    lfo.start();
+
+    const notasTema = [220.00, 246.94, 261.63];
+
+    melodyInterval = setInterval(() => {
+        if(Math.random() > 0.3) {
+            playAmbientNote(notasTema[Math.floor(Math.random() * notasTema.length)]);
+        }
+    }, 4500);
+}
+
+function playAmbientNote(frequency) {
+    if (!audioContext) return;
+
+    const fundamental = audioContext.createOscillator();
+    const subHarmonic = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    fundamental.type = "triangle";
+    fundamental.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+    subHarmonic.type = "sine";
+    subHarmonic.frequency.setValueAtTime(frequency / 2, audioContext.currentTime);
+
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    
+    gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 2.2);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 7);
+
+    fundamental.connect(gainNode);
+    subHarmonic.connect(gainNode);
+    gainNode.connect(mainFilter);
+
+    fundamental.start();
+    subHarmonic.start();
+    
+    fundamental.stop(audioContext.currentTime + 7);
+    subHarmonic.stop(audioContext.currentTime + 7);
+}
+
+function blackHoleImpact() {
+    if (!audioContext) return;
+
+    const osc = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(90, audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(25, audioContext.currentTime + 1.2);
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 1.5);
+
+    osc.connect(gainNode);
+    gainNode.connect(reverbNode);
+    gainNode.connect(audioContext.destination);
+
+    osc.start();
+    osc.stop(audioContext.currentTime + 1.5);
+
+    displayUniverseResponse();
+}
+
+function displayUniverseResponse() {
+    const randomMsg = universeResponses[Math.floor(Math.random() * universeResponses.length)];
+    responseDiv.innerText = randomMsg;
+    responseDiv.style.opacity = "1";
+    
+    setTimeout(() => {
+        responseDiv.style.opacity = "0";
+    }, 4000);
+}
+</script>
+
+</body>
+</html>
