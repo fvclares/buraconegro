@@ -21,7 +21,7 @@ body {
     height: 100%;
 }
 
-/* TELA DE INTRODUÇÃO (Para permitir o som) */
+/* TELA DE INTRODUÇÃO */
 #intro-screen {
     position: fixed;
     inset: 0;
@@ -199,23 +199,11 @@ button.action-btn:hover {
     justify-content: center;
 }
 
-/* RESPONSIVIDADE PARA TELAS PEQUENAS (MOBILE) */
 @media (max-width: 600px) {
-    .title {
-        font-size: 22px;
-        top: 25px;
-    }
-    .subtitle {
-        font-size: 12px;
-        top: 60px;
-    }
-    .ui {
-        bottom: 20px;
-    }
-    textarea {
-        height: 85px;
-        font-size: 15px;
-    }
+    .title { font-size: 22px; top: 25px; }
+    .subtitle { font-size: 12px; top: 60px; }
+    .ui { bottom: 20px; }
+    textarea { height: 85px; font-size: 15px; }
 }
 </style>
 </head>
@@ -227,7 +215,6 @@ button.action-btn:hover {
 </div>
 
 <div id="response-message"></div>
-
 <div id="flash-overlay"></div>
 <canvas id="space"></canvas>
 
@@ -240,10 +227,16 @@ button.action-btn:hover {
 </div>
 
 <script>
+// 1. INICIALIZAÇÃO DE VARIÁVEIS GLOBAIS BÁSICAS
 const canvas = document.getElementById("space");
 const ctx = canvas.getContext("2d");
 const flashOverlay = document.getElementById("flash-overlay");
 const responseDiv = document.getElementById("response-message");
+
+let w, h, cx, cy;
+let BH_RADIUS = 95;
+let flashActive = false; // Declarado explicitamente no topo
+let letters = []; 
 
 const universeResponses = [
     "It is gone. Breathe in.",
@@ -255,16 +248,13 @@ const universeResponses = [
     "It has ceased to exist."
 ];
 
-// CORREÇÃO CRÍTICA: Variável declarada ANTES da classe para evitar erros no Mobile!
+// O SEU ACERTADO ERRO: Definido ANTES de qualquer uso por classes!
 const colors = [
     'rgba(255, 240, 210, ', 
     'rgba(255, 160, 60, ',  
     'rgba(230, 90, 30, ',   
     'rgba(150, 40, 10, '    
 ];
-
-let w, h, cx, cy;
-let BH_RADIUS = 95;
 
 function resize() {
     w = canvas.width = window.innerWidth;
@@ -283,9 +273,7 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-const particles = [];
-let letters = []; 
-
+// 2. DEFINIÇÃO DE CLASSES
 class Particle {
     constructor() {
         this.reset();
@@ -329,7 +317,8 @@ class Particle {
     }
 }
 
-// Reduzido para 1000 para dar fluidez máxima em qualquer processador de smartphone
+// 3. POPULANDO E ESTRUTURANDO
+const particles = [];
 for (let i = 0; i < 1000; i++) { 
     particles.push(new Particle());
 }
@@ -446,7 +435,9 @@ function drawStars() {
     }
 }
 
+// 4. LOOP DE ANIMAÇÃO COM MONITORAMENTO E LIMPEZA
 function animate() {
+    // Rastro/Limpeza parcial
     ctx.fillStyle = "rgba(3, 2, 5, 0.35)"; 
     ctx.fillRect(0, 0, w, h);
 
@@ -463,6 +454,8 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+// Inicializa a renderização com segurança
+console.log("Iniciando motor gráfico...");
 animate();
 
 document.getElementById("wish").addEventListener("keydown", e => {
